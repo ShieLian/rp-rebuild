@@ -1,10 +1,17 @@
 package redpower.gui;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+
 import org.lwjgl.opengl.GL11;
 
+import cpw.mods.fml.common.network.PacketDispatcher;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import redpower.invventory.ContainerAdvBench;
 import redpower.item.ItemDraft;
 import redpower.item.ItemProxy;
+import redpower.net.PacketID;
 import redpower.tileentity.TileAdvBench;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -16,9 +23,13 @@ import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.Packet103SetSlot;
+import net.minecraft.network.packet.Packet250CustomPayload;
 import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.ResourceLocation;
 
+@SideOnly(Side.CLIENT)
 public class GuiAdvBench extends GuiContainer
 {
 	public static final ResourceLocation AdvGuiTextures = new ResourceLocation("redpower:textures/gui/advbench.png");
@@ -86,11 +97,37 @@ public class GuiAdvBench extends GuiContainer
 		if(button instanceof GuiButtonMark)
 		{
 			((ContainerAdvBench)this.inventorySlots).saveMatrix();
-			this.saveRecipe();
+			this.sendPacket(this.saveRecipe());
 		}
 	}
 	
-	private void saveRecipe()
+	private void sendPacket(ItemStack draft)
+	{
+		ByteArrayOutputStream bos = new ByteArrayOutputStream(16);
+	    DataOutputStream outputStream = new DataOutputStream(bos);
+	    try {
+	    	outputStream.writeByte(PacketID.guiAdvUpdate.ordinal());
+	        outputStream.writeInt(this.tile.xCoord);
+	        outputStream.writeInt(this.tile.yCoord);
+	        outputStream.writeInt(this.tile.zCoord);
+	        //write the relevant information here... exemple:
+	        //outputStream.writeUTF(theTextToDisplayTextField.getText());
+	        //outputStream.writeUTF("UPDATE");
+	        Packet.writeItemStack(draft,outputStream);
+	    } catch (Exception ex) {
+			ex.printStackTrace();
+		}
+
+		Packet250CustomPayload packet = new Packet250CustomPayload();
+		packet.channel = "RedPower";
+		packet.data = bos.toByteArray();
+		packet.length = bos.size();
+
+		PacketDispatcher.sendPacketToServer(packet);
+		System.out.println("Sended");
+	}
+	
+	private ItemStack saveRecipe()
 	{
 		//ItemStack draft=this.tile.getStackInSlot(0);
 		ItemStack draft=new ItemStack(ItemProxy.draft,1,1);
@@ -103,8 +140,11 @@ public class GuiAdvBench extends GuiContainer
             if (this.tile.getStackInSlot(i)!= null)
             {
                 NBTTagCompound temptag = new NBTTagCompound();
+                //!
                 temptag.setByte("Slot", (byte)i);
-                this.tile.getStackInSlot(i).writeToNBT(temptag);
+                ItemStack stack=this.tile.getStackInSlot(i);
+                if(stack.getTagCompound()==null)new ItemStack(stack.getItem(),1,stack.getItemDamage()).writeToNBT(temptag);
+                else stack.writeToNBT(temptag);
                 taglist.appendTag(temptag);
             }
         }
@@ -113,6 +153,6 @@ public class GuiAdvBench extends GuiContainer
 		tag.setName("Recipe");
 		draft.setItemDamage(1);
 		draft.setTagCompound(tag);
-		this.tile.setInventorySlotContents(0,draft);
+		return draft;
 	}
 }

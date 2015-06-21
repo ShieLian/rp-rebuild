@@ -4,6 +4,7 @@ import redpower.tileentity.TileentityProxy;
 import redpower.block.BlockProxy;
 import redpower.gui.GuiHandler;
 import redpower.item.ItemProxy;
+import redpower.net.PacketHandler;
 import redpower.proxy.*;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
@@ -17,7 +18,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 
 @Mod(modid="redpower",name="redpower",version="0.0.0.0")
-@NetworkMod(clientSideRequired=true, serverSideRequired=false)
+@NetworkMod(clientSideRequired=true, serverSideRequired=false,channels={"GenericRandom"}, packetHandler = PacketHandler.class)
 public class RedPower
 {
 	@Instance("redpower")
@@ -29,5 +30,6 @@ public class RedPower
 	{
 		proxy.registry();
 		NetworkRegistry.instance().registerGuiHandler(this, new GuiHandler());
+		NetworkRegistry.instance().registerChannel(new PacketHandler(), "RedPower");
 	}
 }

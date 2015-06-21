@@ -1,8 +1,8 @@
 package redpower.stuff.recipes;
 
-import redpower.stuff.Register;
+import redpower.stuff.IRegister;
 
-public class SmeltRecipes implements Register {
+public class SmeltRecipes implements IRegister {
 
 	@Override
 	public void registry() {

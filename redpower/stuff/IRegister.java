@@ -1,6 +1,6 @@
 package redpower.stuff;
 
-public interface Register
+public interface IRegister
 {
 	void registry();
 }
