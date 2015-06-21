@@ -10,15 +10,29 @@ import net.minecraftforge.event.entity.player.PlayerDestroyItemEvent;
 
 public class SlotResultRefill extends SlotCrafting
 {
-	@Override//TODO 覆盖矩阵 OR 手动黑出矩阵
 	private final IInventory craftMatrix;
+	private EntityPlayer thePlayer;
+	private IInventory invRepo;
 	
+	/**
+	 * @author ShieLian
+	 * @param par1EntityPlayer
+	 * @param par2iInvMatrix
+	 * @param par3iInventory
+	 * @param repo InvRepo
+	 * @param par4 SlotID
+	 * @param par5
+	 * @param par6
+	 */
 	public SlotResultRefill(EntityPlayer par1EntityPlayer,
-			IInventory par2iInventory, IInventory par3iInventory, int par4,
+			IInventory par2iInvMatrix, IInventory par3iInventory,IInventory repo, int par4,
 			int par5, int par6)
 	{
-		super(par1EntityPlayer, par2iInventory, par3iInventory, par4, par5,
+		super(par1EntityPlayer, par2iInvMatrix, par3iInventory, par4, par5,
 				par6);
+		this.thePlayer=par1EntityPlayer;
+		this.craftMatrix=par2iInvMatrix;
+		this.invRepo=repo;
 	}
 	
 	@Override
@@ -27,13 +41,29 @@ public class SlotResultRefill extends SlotCrafting
         GameRegistry.onItemCrafted(par1EntityPlayer, par2ItemStack, craftMatrix);
         this.onCrafting(par2ItemStack);
 
-        for (int i = 0; i < this.craftMatrix.getSizeInventory(); ++i)
-        {
-            ItemStack itemstack1 = this.craftMatrix.getStackInSlot(i);
-
-            if (itemstack1 != null)
-            {
-                this.craftMatrix.decrStackSize(i, 1);
+		for (/**SlotID*/int i = 0; i < this.craftMatrix.getSizeInventory(); ++i)
+		{
+			ItemStack itemstack1 = this.craftMatrix.getStackInSlot(i);
+			IInventory tarinv=null;
+			int slotid=i;
+			if (itemstack1 != null)
+			{
+				for (int j = 10; j < 27; j++)
+				{
+					if (this.invRepo.getStackInSlot(j)!=null&&this.invRepo.getStackInSlot(j).isItemEqual(itemstack1))
+					{
+						this.invRepo.decrStackSize(j, 1);
+						this.craftMatrix.decrStackSize(i, 0);
+						tarinv=this.invRepo;
+						slotid=j;
+						break;
+					}
+				}
+                if(tarinv==null)
+                {
+                	this.craftMatrix.decrStackSize(i, 1);
+                	tarinv=this.craftMatrix;
+                }
 
                 if (itemstack1.getItem().hasContainerItem())
                 {
@@ -47,9 +77,9 @@ public class SlotResultRefill extends SlotCrafting
 
                     if (itemstack2 != null && (!itemstack1.getItem().doesContainerItemLeaveCraftingGrid(itemstack1) || !this.thePlayer.inventory.addItemStackToInventory(itemstack2)))
                     {
-                        if (this.craftMatrix.getStackInSlot(i) == null)
+                        if (tarinv.getStackInSlot(i) == null)
                         {
-                            this.craftMatrix.setInventorySlotContents(i, itemstack2);
+                        	tarinv.setInventorySlotContents(slotid, itemstack2);
                         }
                         else
                         {

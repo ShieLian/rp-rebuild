@@ -1,5 +1,9 @@
 package redpower.invventory;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
+
 import redpower.tileentity.TileAdvBench;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -12,7 +16,9 @@ import net.minecraft.inventory.SlotCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntityFurnace;
+import net.minecraftforge.oredict.OreDictionary;
 
 public class ContainerAdvBench extends Container
 {
@@ -20,6 +26,7 @@ public class ContainerAdvBench extends Container
 	private InventoryCrafting matrix=new InventoryCrafting(this, 3, 3);
 	private IInventory craftResult = new InventoryCraftResult();
 	public boolean hasresult=this.craftResult.getStackInSlot(0)!=null;
+	private boolean cancraft=false;
 	
 	public ContainerAdvBench(InventoryPlayer par1InventoryPlayer,TileAdvBench par2tileAdvbench)
 	{
@@ -29,9 +36,9 @@ public class ContainerAdvBench extends Container
 			matrix.setInventorySlotContents(i,this.tile.getStackInSlot(i+1));
 		}
 		//craft:48,18
-		for (int x = 0; x < 3; x++)
+		for (int y = 0; y < 3; y++)
 		{
-			for (int y = 0; y < 3; y++)
+			for (int x = 0; x < 3; x++)
 			{
 				//addSlotToContainer(new Slot(tileEntity, j + i * 3, 62 + j * 18, 17 + i * 18));
 				//1-9
@@ -51,7 +58,7 @@ public class ContainerAdvBench extends Container
 		bindPlayerInventory(par1InventoryPlayer);
 		
 		//
-		this.addSlotToContainer(new SlotCrafting(par1InventoryPlayer.player, this.matrix, this.craftResult, 28, 143, 36));
+		this.addSlotToContainer(new SlotResultRefill(par1InventoryPlayer.player, this.matrix, this.craftResult,this.tile, 28, 143, 36));
 		this.onCraftMatrixChanged(this.matrix);
 		hasresult=this.craftResult.getStackInSlot(0)!=null;
 	}
@@ -128,4 +135,122 @@ public class ContainerAdvBench extends Container
 		return true;
 	}
 
+	public static ItemStack[] getShadowItems(ItemStack draft)
+	{
+		// TODO 自动生成的方法存根
+		if (draft.stackTagCompound == null)
+        {
+            return null;
+        }
+        else
+        {
+            NBTTagList itemtags = draft.stackTagCompound.getTagList("Items");
+
+            if (itemtags == null)
+            {
+                return null;
+            }
+            else
+            {
+                ItemStack[] result = new ItemStack[9];
+                NBTTagCompound temptag;ItemStack tempstack;
+                for (int i = 0; i < itemtags.tagCount(); ++i)
+                {
+                    temptag = (NBTTagCompound)itemtags.tagAt(i);
+                    tempstack= ItemStack.loadItemStackFromNBT(temptag);
+                    byte slot = temptag.getByte("Slot");
+//                    System.out.println(slot+":"+tempstack.getDisplayName());
+                    if (slot >0 && slot <=9)
+                    {
+                        result[slot-1] = tempstack;
+                    }
+                }
+
+                return result;
+            }
+        }
+	}
+
+	public ItemStack getMatrixStack(int index)
+	{
+		return this.matrix.getStackInSlot(index);
+	}
+
+	public int getRepoNum(ItemStack tar)
+	{
+		int result=0;
+//		HashMap<String,Integer> re=new HashMap<String,Integer>();
+//		for(Iterator<String> i$=list.iterator();i$.hasNext();)
+//		{
+			for(int i=1;i<28;i++)
+			{
+				if(OreDictionary.itemMatches(this.tile.getStackInSlot(i),tar,false))
+				{
+					result+=this.tile.getStackInSlot(i).stackSize;
+				}
+			}
+//		}
+		return result;
+	}
+	
+	/**
+	 * 
+	 * @param index
+	 * @param tarstack
+	 * @param counter 
+	 * @return -1 if none. Else means the num
+	 */
+	public int satisfy(int index, ItemStack tarstack, HashMap<String, Integer> counter)
+	{
+		// TODO 自动生成的方法存根
+		int keynum=OreDictionary.getOreID(tarstack);
+		String key=keynum==-1?tarstack.getDisplayName():String.valueOf(keynum);
+		if(counter.get(key)<=0) return 0;
+		int srcid=index+1;
+		int result=0;
+		for(int i=1;i<10;i++)
+		{
+			if(itemMatches(this.tile.getStackInSlot(i),tarstack))
+			{
+				result+=this.tile.getStackInSlot(i).stackSize;
+			}
+		}
+		for(int i=10;i<28;i++)
+		{
+			if(itemMatches(this.tile.getStackInSlot(i),tarstack))
+			{
+				result+=this.tile.getStackInSlot(i).stackSize;
+			}
+		}
+		if(result<counter.get(key)) return -1;
+		else
+		{
+			counter.put(key, counter.get(key)+1);
+			return result;
+		}
+	}
+	
+	public boolean itemMatches(ItemStack tar,ItemStack input)
+	{
+		/*ItemStack draft=this.tile.getStackInSlot(0);
+		ItemStack[] items=getShadowItems(draft);*/
+		boolean flag=OreDictionary.itemMatches(tar, input, false);
+		if(flag) return true;
+		else
+		{
+			InventoryCrafting buffer=new InventoryCrafting(this,3,3);
+			for(int i=0;i<9;++i)
+			{
+				buffer.setInventorySlotContents(i,?);
+			}
+			buffer.setInventorySlotContents(par1, par2ItemStack);
+		}
+	}
+	
+	public void setResultByDraft()
+	{
+		ItemStack result= ItemStack.loadItemStackFromNBT(this.tile.getStackInSlot(0).stackTagCompound.getCompoundTag("Result"));
+		result.stackSize=1;
+		this.craftResult.setInventorySlotContents(0,result);
+	}
 }

@@ -2,10 +2,13 @@ package redpower.gui;
 
 import org.lwjgl.opengl.GL11;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 
+@SideOnly(Side.CLIENT)
 public class GuiButtonMark extends GuiButton
 {
 
@@ -28,7 +31,7 @@ public class GuiButtonMark extends GuiButton
             GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
             //this.field_82253_i = par2 >= this.xPosition && par3 >= this.yPosition && par2 < this.xPosition + this.width && par3 < this.yPosition + this.height;
             int k = this.getHoverState(this.field_82253_i);
-            this.drawTexturedModalRect(this.xPosition, this.yPosition, 177,1,12,12);
+            this.drawTexturedModalRect(this.xPosition, this.yPosition, 176,0,14,14);
             //this.mouseDragged(par1Minecraft, par2, par3);
         }
     }

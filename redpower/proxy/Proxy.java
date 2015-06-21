@@ -4,6 +4,7 @@ import redpower.item.ItemProxy;
 import redpower.stuff.recipes.CraftRecipes;
 import redpower.stuff.recipes.SmeltRecipes;
 import redpower.tileentity.TileentityProxy;
+import redpower.world.worldgen.WorldgenProxy;
 import redpower.block.BlockProxy;
 
 public class Proxy {
@@ -15,6 +16,7 @@ public class Proxy {
 		TileentityProxy.registry();
 		new CraftRecipes().registry();
 		new SmeltRecipes().registry();
+		new WorldgenProxy().registry();
 	}
 
 }
