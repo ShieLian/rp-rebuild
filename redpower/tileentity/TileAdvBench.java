@@ -1,5 +1,6 @@
 package redpower.tileentity;
 
+import redpower.invventory.ContainerAdvBench;
 import redpower.item.ItemDraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
@@ -23,6 +24,8 @@ public class TileAdvBench extends TileEntity implements IInventory//,ISidedInven
 	/**10~27*/
 	private static final int[] inv = new int[] { 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 };
 
+	private ContainerAdvBench callback=null;
+	
 	public TileAdvBench()
 	{
 		
@@ -59,7 +62,6 @@ public class TileAdvBench extends TileEntity implements IInventory//,ISidedInven
 	 *  draft:0 
 	 *  CraftMatrix:1~9 
 	 *  inv:10~27 
-	 *  result:28
 	 */
 	@Override
 	public ItemStack getStackInSlot(int i)
@@ -213,8 +215,22 @@ public class TileAdvBench extends TileEntity implements IInventory//,ISidedInven
 	@Override
 	public boolean isItemValidForSlot(int i, ItemStack itemstack)
 	{
-		//TODO
 		return ((i!=0&&i!=28)||( i==0 && itemstack.getItem() instanceof ItemDraft));
 	}
-
+	
+	@Override
+	public void onInventoryChanged()
+    {
+        super.onInventoryChanged();
+        if(this.callback==null) return;
+        else
+        {
+        	callback.getsatisfyMask();
+        }
+    }
+	
+	public void setcallback(ContainerAdvBench callback)
+	{
+		this.callback=callback;
+	}
 }

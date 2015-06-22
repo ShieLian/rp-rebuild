@@ -23,4 +23,11 @@ public class SlotDraft extends Slot
     {
         return 1;
     }
+	@Override
+    public void onSlotChanged()
+    {
+        this.inventory.onInventoryChanged();
+    }
+
+	
 }

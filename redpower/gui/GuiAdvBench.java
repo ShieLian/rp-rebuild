@@ -71,6 +71,7 @@ public class GuiAdvBench extends GuiContainer
 		buttonmark.xPosition=(this.width - this.xSize)/2+18;
 		buttonmark.yPosition=(this.height - this.ySize)/2+55;
 		buttonmark.drawButton=this.tile.getStackInSlot(0)!=null&&this.tile.getStackInSlot(0).getItem() instanceof ItemDraft&&this.tile.getStackInSlot(0).getItemDamage()==0;
+		((ContainerAdvBench)this.inventorySlots).getsatisfyMask();
 	}
 	//TODO Simplify
 	@Override
@@ -113,6 +114,7 @@ public class GuiAdvBench extends GuiContainer
             GL11.glEnable(GL11.GL_BLEND);
             this.mc.renderEngine.bindTexture(AdvGuiTextures);
             
+            /*
             ItemStack draft=this.tile.getStackInSlot(0);
             NBTTagList itemtaglist=draft.stackTagCompound.getTagList("Items");
             NBTTagCompound[] itemtags=new NBTTagCompound[itemtaglist.tagCount()];
@@ -126,6 +128,7 @@ public class GuiAdvBench extends GuiContainer
 				itemtags[index]=temptag;
 				tempstack=ItemStack.loadItemStackFromNBT(temptag);
 				String mark = OreDictionary.getOreID(tempstack)==-1?tempstack.getDisplayName():String.valueOf(OreDictionary.getOreID(tempstack));
+				*/
 				/*if(!counter.containsKey(mark))
 				{
 					counter.put(mark, 1);
@@ -133,16 +136,16 @@ public class GuiAdvBench extends GuiContainer
 				else
 				{
 					counter.put(mark,counter.get(mark)+1);
-				}*/
+				}*//*
 				counter.put(mark,1);
-			}
-			
+			}*/
+			/*
             for(int index=0;index<itemtags.length;index++)
             {
             	itemtags[index]=(NBTTagCompound)itemtaglist.tagAt(index);
             	ids.add(itemtags[index].getByte("Slot"));
             }
-            
+            */
             for (int index = 0; index < 9; ++index)
             {
                 if (shadowstacks[index] != null)
@@ -154,10 +157,10 @@ public class GuiAdvBench extends GuiContainer
                         var13 = slot.xDisplayPosition;
                         var14 = slot.yDisplayPosition;
 
-//                      if ((((ContainerAdvBench)this.inventorySlots)  .satisfyMask & 1 << index) > 0)
+                        if ((((ContainerAdvBench)this.inventorySlots)  .satisfyMask & (1 << index)) > 0)
                         
                         //if(!ids.contains((byte)index)||((ContainerAdvBench)this.inventorySlots).getMatrixStack(index)!=null&&ItemStack.loadItemStackFromNBT(itemtags[index]).isItemEqual(((ContainerAdvBench)this.inventorySlots).getMatrixStack(index)))
-                        if((!ids.contains(new Byte((byte)(index+1))))||((ContainerAdvBench)this.inventorySlots).satisfy(index,shadowstacks[index],counter)!=-1 )
+//                        if((!ids.contains(new Byte((byte)(index+1))))||((ContainerAdvBench)this.inventorySlots).satisfy(index,shadowstacks,counter)!=-1 )
                         {
                             GL11.glColor4f(1.0F, 1.0F, 1.0F, 0.5F);
                         }

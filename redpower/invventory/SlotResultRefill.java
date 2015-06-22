@@ -13,26 +13,27 @@ public class SlotResultRefill extends SlotCrafting
 	private final IInventory craftMatrix;
 	private EntityPlayer thePlayer;
 	private IInventory invRepo;
-	
+	private ContainerAdvBench callback;
 	/**
 	 * @author ShieLian
 	 * @param par1EntityPlayer
 	 * @param par2iInvMatrix
-	 * @param par3iInventory
+	 * @param invResult
 	 * @param repo InvRepo
 	 * @param par4 SlotID
 	 * @param par5
 	 * @param par6
 	 */
-	public SlotResultRefill(EntityPlayer par1EntityPlayer,
-			IInventory par2iInvMatrix, IInventory par3iInventory,IInventory repo, int par4,
+	public SlotResultRefill(EntityPlayer par1EntityPlayer,ContainerAdvBench callback,
+			IInventory par2iInvMatrix, IInventory invResult,IInventory repo, int par4,
 			int par5, int par6)
 	{
-		super(par1EntityPlayer, par2iInvMatrix, par3iInventory, par4, par5,
+		super(par1EntityPlayer, par2iInvMatrix, invResult, par4, par5,
 				par6);
 		this.thePlayer=par1EntityPlayer;
 		this.craftMatrix=par2iInvMatrix;
 		this.invRepo=repo;
+		this.callback =callback;
 	}
 	
 	@Override
@@ -41,7 +42,7 @@ public class SlotResultRefill extends SlotCrafting
         GameRegistry.onItemCrafted(par1EntityPlayer, par2ItemStack, craftMatrix);
         this.onCrafting(par2ItemStack);
 
-		for (/**SlotID*/int i = 0; i < this.craftMatrix.getSizeInventory(); ++i)
+		for (/**SlotID*/int i = 0; i <9; ++i)
 		{
 			ItemStack itemstack1 = this.craftMatrix.getStackInSlot(i);
 			IInventory tarinv=null;
@@ -88,6 +89,10 @@ public class SlotResultRefill extends SlotCrafting
                     }
                 }
             }
+			else
+			{
+				callback.consume(i);
+			}
         }
     }
 

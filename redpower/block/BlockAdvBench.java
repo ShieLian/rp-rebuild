@@ -92,12 +92,12 @@ public class BlockAdvBench extends BlockContainer
     {
         Random rand = new Random();
         TileEntity tileEntity = world.getBlockTileEntity(x, y, z);
-        if (!(tileEntity instanceof IInventory))
+        if (!(tileEntity instanceof TileAdvBench))
         {
         	return;
         }
-        IInventory inventory = (IInventory) tileEntity;
-        for (int i = 0; i < inventory.getSizeInventory(); i++)
+        TileAdvBench inventory = (TileAdvBench) tileEntity;
+        for (int i = 0; i < 28; i++)
         {
         	ItemStack item = inventory.getStackInSlot(i);
         	if (item != null && item.stackSize > 0)

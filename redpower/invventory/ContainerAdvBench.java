@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+import redpower.lib.CompareLib;
 import redpower.tileentity.TileAdvBench;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -18,19 +21,27 @@ import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntityFurnace;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.player.PlayerDestroyItemEvent;
 import net.minecraftforge.oredict.OreDictionary;
 
+
+//TODO simplify
 public class ContainerAdvBench extends Container
 {
 	private TileAdvBench tile;
 	private InventoryCrafting matrix=new InventoryCrafting(this, 3, 3);
 	private IInventory craftResult = new InventoryCraftResult();
+	private EntityPlayer player;
+	
 	public boolean hasresult=this.craftResult.getStackInSlot(0)!=null;
 	private boolean cancraft=false;
+	public int satisfyMask=0;
 	
 	public ContainerAdvBench(InventoryPlayer par1InventoryPlayer,TileAdvBench par2tileAdvbench)
 	{
 		this.tile = par2tileAdvbench;
+		this.player=par1InventoryPlayer.player;
 		for (int i = 0; i < 9; i++)
 		{
 			matrix.setInventorySlotContents(i,this.tile.getStackInSlot(i+1));
@@ -58,9 +69,10 @@ public class ContainerAdvBench extends Container
 		bindPlayerInventory(par1InventoryPlayer);
 		
 		//
-		this.addSlotToContainer(new SlotResultRefill(par1InventoryPlayer.player, this.matrix, this.craftResult,this.tile, 28, 143, 36));
+		this.addSlotToContainer(new SlotResultRefill(par1InventoryPlayer.player, this, this.matrix, this.craftResult,this.tile, 28, 143, 36));
 		this.onCraftMatrixChanged(this.matrix);
 		hasresult=this.craftResult.getStackInSlot(0)!=null;
+		this.tile.setcallback(this);
 	}
 	
 	//0-35
@@ -82,13 +94,34 @@ public class ContainerAdvBench extends Container
 		}
 	}
 	
+	@Override
 	public void onCraftMatrixChanged(IInventory par1IInventory)
 	{
 		 ItemStack stack = CraftingManager.getInstance().findMatchingRecipe(this.matrix, this.tile.worldObj);
 		 //this.craftResult.setInventorySlotContents(0, ItemStack.areItemStacksEqual(stack, new ItemStack( Block.planks, 2, 0)) ? null : stack);
 		 this.craftResult.setInventorySlotContents(0, stack);
 		 this.hasresult=this.craftResult.getStackInSlot(0)!=null;
+		 //TODO
+		 //saveMatrix();
+		 getsatisfyMask();
 	}
+	
+	/**
+     * args: slotID, itemStack to put in slot
+     */
+	/*
+    public void putStackInSlot(int par1, ItemStack par2ItemStack)
+    {
+    	super.putStackInSlot(par1,par2ItemStack);
+    	getsatisfyMask();
+    }
+    @SideOnly(Side.CLIENT)
+    @Override
+    public void putStacksInSlots(ItemStack[] par1ArrayOfItemStack)
+    {
+        super.putStacksInSlots(par1ArrayOfItemStack);
+        getsatisfyMask();
+    }*/
 	
 	@Override
 	public void onContainerClosed(EntityPlayer par1EntityPlayer)
@@ -111,6 +144,7 @@ public class ContainerAdvBench extends Container
 			ItemStack var3 = this.matrix.getStackInSlot(i);
 			this.tile.setInventorySlotContents(i + 1, var3);
 		}
+		getsatisfyMask();
 	}
 	
 	public NBTTagCompound getResultNBT()
@@ -135,9 +169,20 @@ public class ContainerAdvBench extends Container
 		return true;
 	}
 
+	/*@Override
+	public void detectAndSendChanges()
+	{
+		super.detectAndSendChanges();
+		getsatisfyMask();
+	}*/
+	
+	/**
+	 * @author eloraam
+	 * @param draft
+	 * @return array contains ItemStacks of recipe stored in draft
+	 */
 	public static ItemStack[] getShadowItems(ItemStack draft)
 	{
-		// TODO 自动生成的方法存根
 		if (draft.stackTagCompound == null)
         {
             return null;
@@ -176,7 +221,7 @@ public class ContainerAdvBench extends Container
 		return this.matrix.getStackInSlot(index);
 	}
 
-	public int getRepoNum(ItemStack tar)
+	/*public int getRepoNum(ItemStack tar)
 	{
 		int result=0;
 //		HashMap<String,Integer> re=new HashMap<String,Integer>();
@@ -191,35 +236,39 @@ public class ContainerAdvBench extends Container
 			}
 //		}
 		return result;
-	}
+	}*/
 	
 	/**
 	 * 
-	 * @param index
-	 * @param tarstack
+	 * @param tarindex
+	 * @param recipelist
 	 * @param counter 
 	 * @return -1 if none. Else means the num
 	 */
-	public int satisfy(int index, ItemStack tarstack, HashMap<String, Integer> counter)
+	public int satisfy(int tarindex, ItemStack[] recipelist, HashMap<String, Integer> counter,ItemStack expectedResult)
 	{
 		// TODO 自动生成的方法存根
-		int keynum=OreDictionary.getOreID(tarstack);
-		String key=keynum==-1?tarstack.getDisplayName():String.valueOf(keynum);
-		if(counter.get(key)<=0) return 0;
-		int srcid=index+1;
+		if(recipelist==null||recipelist[tarindex]==null) return 1;
+		int keynum=OreDictionary.getOreID(recipelist[tarindex]);
+		String key=keynum==-1?recipelist[tarindex].getDisplayName():String.valueOf(keynum);
+		if(counter.get(key)==null) counter.put(key,1);
+		
+		int srcid=tarindex+1;
 		int result=0;
 		for(int i=1;i<10;i++)
 		{
-			if(itemMatches(this.tile.getStackInSlot(i),tarstack))
+			if(itemMatches(this.tile.getStackInSlot(i),recipelist,tarindex,expectedResult))
 			{
 				result+=this.tile.getStackInSlot(i).stackSize;
 			}
 		}
+		//if(result>counter.get(key)){counter.put(key, counter.get(key)+1);return result;}
 		for(int i=10;i<28;i++)
 		{
-			if(itemMatches(this.tile.getStackInSlot(i),tarstack))
+			if(itemMatches(this.tile.getStackInSlot(i),recipelist,tarindex,expectedResult))
 			{
 				result+=this.tile.getStackInSlot(i).stackSize;
+				//if(result>counter.get(key)){counter.put(key, counter.get(key)+1);return result;}
 			}
 		}
 		if(result<counter.get(key)) return -1;
@@ -230,21 +279,49 @@ public class ContainerAdvBench extends Container
 		}
 	}
 	
-	public boolean itemMatches(ItemStack tar,ItemStack input)
+	public boolean itemMatches(ItemStack input,ItemStack[] recipelist,int index,ItemStack expectedResult)
 	{
-		/*ItemStack draft=this.tile.getStackInSlot(0);
-		ItemStack[] items=getShadowItems(draft);*/
-		boolean flag=OreDictionary.itemMatches(tar, input, false);
-		if(flag) return true;
-		else
+		ItemStack tar=recipelist[index];
 		{
-			InventoryCrafting buffer=new InventoryCrafting(this,3,3);
+			InventoryCrafting buffer=new InventoryCrafting(new ContainerBlackHole(),3,3);
 			for(int i=0;i<9;++i)
 			{
-				buffer.setInventorySlotContents(i,?);
+				if(i==index) continue;
+				buffer.setInventorySlotContents(i,recipelist[i]);
 			}
-			buffer.setInventorySlotContents(par1, par2ItemStack);
+			buffer.setInventorySlotContents(index, input);
+			ItemStack tested=CraftingManager.getInstance().findMatchingRecipe(buffer, this.tile.worldObj);
+			return (tested!=null&&tested.isItemEqual(expectedResult)&&tested.stackSize==expectedResult.stackSize&&CompareLib.compareNBT(tested.stackTagCompound,expectedResult.stackTagCompound));
 		}
+	}
+	
+	public int getsatisfyMask()
+	{
+		this.satisfyMask=0;
+		ItemStack draft = this.tile.getStackInSlot(0);
+		if (draft == null||draft.getItemDamage()==0)
+		{
+			return 0;
+		}
+		ItemStack[] recipelist=getShadowItems(draft);
+		ItemStack expectedResult=ItemStack.loadItemStackFromNBT((NBTTagCompound) draft.stackTagCompound.getTag("Result"));
+		HashMap<String,Integer> counter=new HashMap<String,Integer>();
+		
+		/*int keynum;String key;
+		for(int i=0;i<recipelist.length;i++)
+		{
+			keynum=OreDictionary.getOreID(recipelist[i]);
+			key=keynum==-1?recipelist[i].getDisplayName():OreDictionary.getOreName(keynum);
+			counter.put(key,counter.get(key)==null?1:(counter.get(key)==null?1:(counter.get(key)+1)));
+		}*/
+		
+		for(int i=0;i<9;++i)
+		{
+			this.satisfyMask|=satisfy(i,recipelist,counter,expectedResult)==-1?0:(1<<i);
+		}
+		if(satisfyMask==511) setResultByDraft();
+		return this.satisfyMask;
+		
 	}
 	
 	public void setResultByDraft()
@@ -252,5 +329,57 @@ public class ContainerAdvBench extends Container
 		ItemStack result= ItemStack.loadItemStackFromNBT(this.tile.getStackInSlot(0).stackTagCompound.getCompoundTag("Result"));
 		result.stackSize=1;
 		this.craftResult.setInventorySlotContents(0,result);
+	}
+	
+	/**
+	 * 
+	 * @param slotid index of target slot in matrix
+	 */
+	public void consume(int slotid)
+	{
+		ItemStack[] recipe=getShadowItems(this.tile.getStackInSlot(0));
+		ItemStack target=recipe[slotid];
+		if(target==null)
+		{
+			return;
+		}
+		ItemStack tar=null;
+		int i;
+		for(i=10;i<28;++i)
+		{
+			if(itemMatches(this.tile.getStackInSlot(i), recipe, slotid,ItemStack.loadItemStackFromNBT(this.tile.getStackInSlot(0).stackTagCompound.getCompoundTag("Result"))))
+			{
+				if (this.tile.getStackInSlot(i) != null)
+				{
+					tar = this.tile.getStackInSlot(i).copy();
+				}
+				else continue;
+				//tar.decrStackSize(i, 1);
+				this.tile.decrStackSize(i, 1);
+				break;
+			}
+		}
+		if (tar.getItem().hasContainerItem())
+        {
+            ItemStack itemstack2 = tar.getItem().getContainerItemStack(tar);
+
+            if (itemstack2.isItemStackDamageable() && itemstack2.getItemDamage() > itemstack2.getMaxDamage())
+            {
+                MinecraftForge.EVENT_BUS.post(new PlayerDestroyItemEvent(player, itemstack2));
+                itemstack2 = null;
+            }
+
+            if (itemstack2 != null && (!tar.getItem().doesContainerItemLeaveCraftingGrid(tar) || !this.player.inventory.addItemStackToInventory(itemstack2)))
+            {
+                if (this.tile.getStackInSlot(i) == null)
+                {
+                	this.tile.setInventorySlotContents(slotid, itemstack2);
+                }
+                else
+                {
+                    //this.thePlayer.dropPlayerItem(itemstack2);
+                }
+            }
+        }
 	}
 }
